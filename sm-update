@@ -1,0 +1,60 @@
+#!/bin/bash
+#
+# Program: supermon_latest_update
+# Author:  Paul Aidukas - KN2R
+# Copyright (c) Nov 2, 2020
+#
+# Get/install latest Official Supermon Update
+# from Original Supermon developer internet site.
+#
+# 02-Nov-2020  Paul-KN2R  Initial release.
+# 27-Nov-2020  Paul-KN2R  Changed to always get latest update.
+#
+###############################################################
+
+# Function to display usage information
+show_usage() {
+    cat << EOF
+Usage: $(basename "$0")
+
+Get and install the latest Official Supermon Update from the internet.
+
+EOF
+}
+
+# Check if the script is being run as root
+if [ "$(id -u)" -ne 0 ]; then
+    printf "This script must be run as root\n" >&2
+    exit 1
+fi
+
+# Check the operating system
+OSR=$(awk -F '=' '/^ID=/ {print tolower($2)}' /etc/os-release)
+if [ "$OSR" != "archarm" ]; then
+    printf "\nThis is NOT a HamVoIP ARCH system!\n"
+    printf "You must get and run the correct installer for your system image.\n"
+    printf "ASL or HamVoIP.  Installation aborted.\n\a\n"
+    exit 1
+fi
+
+# Download and extract the latest Supermon update
+cd / || exit 1
+wget -q http://2577.asnode.org:43856/Supermon-latest.tgz
+tar -xzvpf Supermon-latest.tgz
+rm Supermon-latest.tgz
+
+# Cleanup old files
+CLNUP="/var/www/html/supermon"
+MIM=".php"
+FLS=(ast_reload stats asteronoff astlog dtmf fastrestart linuxlog pi-gpio reboot webacclog)
+for i in "${FLS[@]}"; do
+    rm -f "${CLNUP}/${i}.${MIM}"
+done
+rm -f "$CLNUP/edit/controlpanel.php"
+# /usr/local/sbin/supermon/fixperms
+sync
+
+# Display completion message
+printf "Supermon update installed successfully\n"
+
+# End of script
